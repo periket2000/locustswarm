@@ -1,0 +1,13 @@
+*.db
+*.pyc
+*.pyo
+*~
+*.DS_Store
+*.idea
+*.cache
+build
+dist
+*.egg-info
+doc/build
+*.pytest_cache
+*.vscode

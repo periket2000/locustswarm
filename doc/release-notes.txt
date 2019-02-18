@@ -1,0 +1,27 @@
+@version $Id: release-notes.txt 13 August 2018 - 20:02 Marco Albero $
+
+========================================================================
+Unit9 test -- Tool for passing the test
+========================================================================
+
+This tool is intended for convincing the unit9 people in hiring me.
+
+---------------------------------------------------------------------
+Release 1.0.0
+---------------------------------------------------------------------
+NEW FEATURES:
+* skeleton creation
+
+NOTES:
+* This section is for featured notes.
+
+CHANGES:
+* This section is for featured changes like api changes, libraries changed, ...
+
+BUG FIXES:
+* This section is for listing the fixed bugs like:
+* [BUG-001] Bug description
+
+KNOWN ISSUES:
+* This section is for known issues.
+

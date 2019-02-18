@@ -1,0 +1,16 @@
+# PUT THIS FILE IN /etc/systemd/system/
+[Unit]
+Description=API backend
+After=network.target
+
+[Service]
+User=newera
+Group=newera
+Environment=HOME=/home/newera
+Environment=OTHER=BLAH
+WorkingDirectory=/home/newera/dqt
+ExecStart=/bin/sh /home/newera/dqt/dqt.sh start
+ExecStop=/bin/sh /home/newera/dqt/dqt.sh stop
+
+[Install]
+WantedBy=multi-user.target
