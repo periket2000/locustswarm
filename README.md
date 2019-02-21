@@ -1,5 +1,9 @@
 # LOCUST SWARM
 
+## Standalone
+
+locust --host=http://<ip target>
+
 ## Running master
 
 locust --host=http://<ip target> --master
