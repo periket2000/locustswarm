@@ -1,57 +1,64 @@
 # -*- coding: utf-8 -*-
-import multiprocessing
 import sys
-
 import asyncio
-import time
 import datetime
 import pytest
-from modules.utils.task import Task
+import requests
 from modules.utils.parallel import Parallel
 
-loop = asyncio.get_event_loop()
 
-# Marked as integration test
-# Could be launched isolated with 'pytest -v -m meter'
-
-@pytest.mark.meter
-@pytest.mark.skipif('meter' not in sys.argv,
+@pytest.mark.multithead_multicore
+@pytest.mark.skipif('multithead_multicore' not in sys.argv,
                     reason="no explicitly selected")
-def test_meter():
-    t = Task()
-    s = ['https://localhost', 'https://localhost/dqt']
-    t.overwrite(sites=s)
-    t.set_timeout(timeout=1)
-    r = t.run(times=300)
-    assert r is not None
-
-
-@pytest.mark.meter
-@pytest.mark.skipif('meter' not in sys.argv,
-                    reason="no explicitly selected")
-def test_meter_parallel_processes():
-    t = Task()
-    s = ['https://localhost']
-    t.overwrite(sites=s)
-    t.set_timeout(timeout=1)
-    t.set_times(times=100)
+def test_multithead_multicore():
     start = datetime.datetime.now()
+    r = Parallel.run_timed_core_multi_threaded()
+    end = datetime.datetime.now() - start
+    sec = int(end.total_seconds()) + 1
+    b = []
+    c = 0
+    for a in r:
+        if a:
+            b = a + b
+        c += 1
+    t = [r for r in b if 'timeout' in r]
+    print("total timeouts {}".format(len(t)))
+    print("total send requests: {}".format(c))
+    print("total {} seconds".format(sec))
+    print("{} requests/seconds".format((len(b)-len(t))/sec))
 
-    s = time.time()
+
+def get2(url, loop, results):
+    def do_request():
+        results.append(requests.get(url, verify=False, timeout=1))
+    yield from loop.run_in_executor(None, do_request)
+
+
+@pytest.mark.multithead
+@pytest.mark.skipif('multithead' not in sys.argv,
+                    reason="no explicitly selected")
+def test_multithead():
+    total_seconds = 1
     elapsed = 0
-    seconds = 10
-    result = []
-    while elapsed < seconds:
-        r = Parallel.run_core_multi(workers=multiprocessing.cpu_count(), target=t.run, args=None, with_timeout=10)
-        for res in r:
-            result += res
-        elapsed = time.time() - s
+    trial_start = datetime.datetime.now()
+    results = []
+    futures = []
+    loop = asyncio.get_event_loop()
+    cont = 0
+    while elapsed < total_seconds and cont < 2000:
+        coro = get2('https://localhost', loop, results)
+        # set timeout
+        waiter = asyncio.wait_for(coro, 1)
+        futures.append(asyncio.Task(waiter))
+        trial_end = datetime.datetime.now() - trial_start
+        elapsed = int(trial_end.total_seconds())
+        cont += 1
 
-    end = datetime.datetime.now()
-    delta = end - start
-    sec = int(delta.total_seconds())
+    try:
+        loop.run_until_complete(asyncio.gather(*futures))
+    except:
+        print("Timeout Error")
 
-    print(result)
-    print("total requests {}".format(len(result)))
-    print("test run in {} seconds".format(sec))
-    assert r is not None
+    assert len(results) > 0
+    # print(results)
+    print(len(results))

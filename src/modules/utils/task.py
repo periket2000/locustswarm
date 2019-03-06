@@ -1,4 +1,6 @@
 import asyncio
+from threading import Thread
+from time import sleep
 import requests
 import datetime
 import numpy
@@ -14,6 +16,8 @@ class Task:
         self.ok = []
         self.failed = []
         self.unable = []
+        self.signaled = False
+        self.signal = None
 
     def overwrite(self, sites=None):
         self.sites = sites
@@ -39,6 +43,27 @@ class Task:
         ms = int(delta.total_seconds() * 1000)
         return (site, ms, r)
 
+    def get2(self, site, results, timeout, total_seconds=5, step=1):
+        elapsed = 0
+        trial_start = datetime.datetime.now()
+        while elapsed < total_seconds:
+            start = datetime.datetime.now()
+            try:
+                r = self._get_url(site=site)
+            except:
+                r = None
+            end = datetime.datetime.now()
+            delta = end - start
+            ms = int(delta.total_seconds() * 1000)
+            if ms > (timeout*1000):
+                print("timeout")
+                results.append((site, ms, 'timeout'))
+            else:
+                results.append((site, ms, r))
+            trial_end = datetime.datetime.now() - trial_start
+            elapsed = int(trial_end.total_seconds())
+        return (site, ms, r)
+
     def run(self):
         result = []
         futures = []
@@ -47,6 +72,21 @@ class Task:
             futures += [self.get(i) for i in self.sites]
         result += loop.run_until_complete(asyncio.gather(*futures))
         return result
+
+    def _raise_signal(self, signal):
+        self.signal = signal
+        self.signaled = True
+
+    def run2(self, site, timeout, nthreads = 5):
+        results = []
+        threads = []
+        for i in range(nthreads):
+            t = Thread(target=self.get2, args=(site, results, timeout))
+            threads.append(t)
+            t.start()
+        for t in threads:
+            t.join()
+        return results
 
     def median(self, req_ms = None):
         if req_ms:
